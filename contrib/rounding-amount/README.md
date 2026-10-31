@@ -126,10 +126,8 @@ Título sugerido: `[Bug]: store draft order isolation test is still skipped`
 `integration-tests/http/__tests__/order/store/order.spec.ts` still skips the test that asserts a
 draft order can't be fetched through the public store route:
 
-```ts
-// TODO: This should have thrown an error, but doesn't seem to.
-it.skip("should throw an error when fetching draft order", async () => {
-```
+    // TODO: This should have thrown an error, but doesn't seem to.
+    it.skip("should throw an error when fetching draft order", async () => {
 
 So `GET /store/orders/:id` with a draft order id is effectively untested.
 
