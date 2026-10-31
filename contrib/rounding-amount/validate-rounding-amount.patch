@@ -1,0 +1,95 @@
+diff --git a/.changeset/great-pandas-invite.md b/.changeset/great-pandas-invite.md
+new file mode 100644
+index 0000000000..6cae70420b
+--- /dev/null
++++ b/.changeset/great-pandas-invite.md
+@@ -0,0 +1,8 @@
++---
++"@medusajs/payment": patch
++---
++
++fix(payment): validate the amount in `roundToCurrencyPrecision`
++
++A missing, non-finite (`NaN`/`Infinity`) or negative amount now throws an `INVALID_DATA` error instead of reaching the capture guards, where it surfaced as a confusing "cannot capture more than the authorized amount" error.
++
+diff --git a/packages/modules/payment/src/services/__tests__/round-to-currency-precision.spec.ts b/packages/modules/payment/src/services/__tests__/round-to-currency-precision.spec.ts
+index 7de94e9b15..81d13d07fb 100644
+--- a/packages/modules/payment/src/services/__tests__/round-to-currency-precision.spec.ts
++++ b/packages/modules/payment/src/services/__tests__/round-to-currency-precision.spec.ts
+@@ -37,4 +37,42 @@ describe("roundToCurrencyPrecision", () => {
+   it("should keep the full precision for a malformed currency code", () => {
+     expect(roundToCurrencyPrecision(200.12345, "xx")).toBe(200.12345)
+   })
++
++  describe("validation", () => {
++    const callRounding = (amount: any, currencyCode = "usd") =>
++      (PaymentModuleService.prototype as any).roundToCurrencyPrecision.call(
++        null,
++        amount,
++        currencyCode
++      )
++
++    it("should throw when the amount is missing", () => {
++      expect(() => callRounding(null)).toThrow("Amount to round is required.")
++      expect(() => callRounding(undefined)).toThrow(
++        "Amount to round is required."
++      )
++    })
++
++    it.each([NaN, Infinity, -Infinity, "NaN", "Infinity"])(
++      "should throw when the amount is not finite (%p)",
++      (amount) => {
++        expect(() => callRounding(amount)).toThrow(
++          "Amount to round must be a finite number."
++        )
++      }
++    )
++
++    it.each([-1, "-5.00"])(
++      "should throw when the amount is negative (%p)",
++      (amount) => {
++        expect(() => callRounding(amount)).toThrow(
++          "Amount to round cannot be negative."
++        )
++      }
++    )
++
++    it("should allow zero", () => {
++      expect(MathBN.convert(callRounding(0)).toNumber()).toBe(0)
++    })
++  })
+ })
+diff --git a/packages/modules/payment/src/services/payment-module.ts b/packages/modules/payment/src/services/payment-module.ts
+index 864b920ab9..7e11ee2044 100644
+--- a/packages/modules/payment/src/services/payment-module.ts
++++ b/packages/modules/payment/src/services/payment-module.ts
+@@ -172,6 +172,29 @@ export default class PaymentModuleService
+     amount: BigNumberInput,
+     currencyCode: string
+   ): BigNumberInput {
++    if (amount == null) {
++      throw new MedusaError(
++        MedusaError.Types.INVALID_DATA,
++        `Amount to round is required.`
++      )
++    }
++
++    const converted = MathBN.convert(amount)
++
++    if (!converted.isFinite()) {
++      throw new MedusaError(
++        MedusaError.Types.INVALID_DATA,
++        `Amount to round must be a finite number.`
++      )
++    }
++
++    if (MathBN.lt(converted, 0)) {
++      throw new MedusaError(
++        MedusaError.Types.INVALID_DATA,
++        `Amount to round cannot be negative.`
++      )
++    }
++
+     let precision: number | undefined = undefined
+     try {
+       precision = Intl.NumberFormat(undefined, {
