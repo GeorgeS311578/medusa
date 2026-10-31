@@ -1,9 +1,9 @@
 diff --git a/.changeset/great-pandas-invite.md b/.changeset/great-pandas-invite.md
 new file mode 100644
-index 0000000000..6cae70420b
+index 0000000000..134a9286ba
 --- /dev/null
 +++ b/.changeset/great-pandas-invite.md
-@@ -0,0 +1,8 @@
+@@ -0,0 +1,7 @@
 +---
 +"@medusajs/payment": patch
 +---
@@ -11,7 +11,6 @@ index 0000000000..6cae70420b
 +fix(payment): validate the amount in `roundToCurrencyPrecision`
 +
 +A missing, non-finite (`NaN`/`Infinity`) or negative amount now throws an `INVALID_DATA` error instead of reaching the capture guards, where it surfaced as a confusing "cannot capture more than the authorized amount" error.
-+
 diff --git a/packages/modules/payment/src/services/__tests__/round-to-currency-precision.spec.ts b/packages/modules/payment/src/services/__tests__/round-to-currency-precision.spec.ts
 index 7de94e9b15..81d13d07fb 100644
 --- a/packages/modules/payment/src/services/__tests__/round-to-currency-precision.spec.ts
